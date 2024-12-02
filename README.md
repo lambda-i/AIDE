@@ -13,7 +13,7 @@ ai-disease-evaluator/
 │  ├── rag_framework/   # RAG-based medication recommendation logic
 │  ├── location/        # Google Maps API integration
 │  ├── ai_model/        # RealTime API integration
-│  ├── schemas.py       # Data schemas for validation and information collection
+│  ├── schemas/       # Data schemas for validation and information collection
 │  ├── App.py           # Streamlit entry point
 ├─ .env.local           # Local environment variables
 ├─ .env.local.dist      # Template for sharing environment variables
