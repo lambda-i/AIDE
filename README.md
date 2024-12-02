@@ -106,41 +106,6 @@ AI Disease Evaluator/
 
 ---
 
-## **Customization**
-
-### **1. Adding New Diseases**
-
-To include additional diseases in the results:
-
-- Modify the `normalized` dictionary in the `Results` page:
-  ```python
-  normalized = {
-      "Influenza": 35.67,
-      "COVID-19": 65.12,
-      "Common Cold": 12.34,
-      # Add new diseases here
-      "New Disease": likelihood_value,
-  }
-  ```
-
-### **2. Changing the Likelihood Thresholds**
-
-- Update the `color` logic in `display_results_as_cards`:
-  ```python
-  color = "#ff4d4d" if likelihood > 50 else "#333"
-  ```
-
-### **3. Modifying GPT Behavior**
-
-- Customize the system prompt in `gpt_api.py`:
-  ```python
-  messages = [
-      {"role": "system", "content": "You are a medical assistant providing accurate assessments."}
-  ]
-  ```
-
----
-
 ## **Technologies Used**
 
 - **[Streamlit](https://streamlit.io/)**: Interactive UI and application framework.
