@@ -1,2 +1,9 @@
+# python environment
+myvenv/
+
+# environment variables
 .env
 .env.local
+
+# dev files/test files etc
+.dev/
