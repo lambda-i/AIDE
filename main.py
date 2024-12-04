@@ -16,8 +16,27 @@ import uuid
 import logging
 import time
 import redis
+from datetime import datetime
+
+from openai import OpenAI
+from qdrant_client import QdrantClient
+import pymupdf4llm
 
 load_dotenv()
+
+# for session history
+conversation_histories = {}
+# for summaries
+conversation_summaries = {}
+session_caller_numbers = {}
+
+# RAG
+client_openai = OpenAI()
+
+vectordb_client = QdrantClient(
+    url=os.getenv("QDRANT_URL"), 
+    api_key=os.getenv("QDRANT_API_KEY")
+)
 
 redis_url = urllib.parse.urlparse(os.environ.get("REDIS_URL"))
 redis_client = redis.Redis(host=redis_url.hostname, port=redis_url.port, password=redis_url.password, ssl=True, ssl_cert_reqs=None)
@@ -127,6 +146,7 @@ async def handle_incoming_call(
     caller_number = form_data.get('From', 'Unknown')
     logger.info(f"Caller: {caller_number}")
     session_id = create_session(api_key, project_id, caller_number)
+    session_caller_numbers[session_id] = caller_number #check
     logger.info(f"Project::{project_id}")
     logger.info(f"Incoming call handled. Session ID: {session_id}")
     host = request.url.hostname
@@ -134,6 +154,7 @@ async def handle_incoming_call(
     response = VoiceResponse()
     response.pause(length=1)
     connect = Connect()
+    phone_number=PERSONAL_PHONE_NUMBER
     encoded_phone_number = urllib.parse.quote_plus(phone_number)
     encoded_introduction = urllib.parse.quote_plus(introduction)
     stream = Stream(url=f'wss://{host}/media-stream/project/{project_id}/session/{session_id}/{encoded_phone_number}/{encoded_introduction}')
@@ -324,8 +345,10 @@ async def handle_media_stream(websocket: WebSocket, project_id: int, session_id:
 
                 except WebSocketDisconnect:
                     logger.info(f"OpenAI WebSocket disconnected. Session ID: {session_id}")
+                    await generate_conversation_summary(session_id) #check
                 except Exception as e:
                     logger.error(f"Error in send_to_twilio: {e}")
+                    await generate_conversation_summary(session_id) #check
                     raise Exception("Close Stream")
 
             await asyncio.gather(receive_from_twilio(), send_to_twilio())
@@ -356,7 +379,46 @@ def start_recording(call_id: str, session_id: str, host: str):
     except Exception as e:
         logger.error(f"Failed to start recording for Call SID: {call_id}. Error: {e}")
 
+# def get_additional_context(query, api_key, project_id, session_id):
+#     custom_persona = """
+#     You are an AI assistant tasked with answering user queries based on a knowledge base. The user query is transcribed from voice audio, so there may be transcription errors.
+
+#     When responding to the user query, follow these guidelines:
+#     1. Match the query to the knowledge base using both phonetic and semantic similarity.
+#     2. Attempt to answer even if the match isn't perfect, as long as it seems reasonably close.
+
+#     Provide a concise answer, limited to three sentences.
+#     """
+
+#     tries = 0
+#     max_retries = 2
+#     while tries <= max_retries:
+#         try:
+#             print(api_key)
+#             CustomGPT.api_key = api_key
+#             logger.info(f"CustomGPT query sent:: {query}")
+#             conversation = CustomGPT.Conversation.send(
+#                 project_id=project_id, 
+#                 session_id=session_id, 
+#                 prompt=query, 
+#                 custom_persona=custom_persona
+#             )
+#             logger.info(f"CustomGPT response: {conversation}")
+#             return conversation.parsed.data.openai_response  # Correct f-string is unnecessary
+#         except Exception as e:
+#             logger.error(f"Get Additional Context failed::Try {tries}::Error: {conversation}")
+#             time.sleep(2)
+#         tries += 1
+
+#     return "Sorry, I didn't get your query."
+
+### VECTOR BASED RAG
 def get_additional_context(query, api_key, project_id, session_id):
+
+    # Initialize conversation history for new sessions
+    if session_id not in conversation_histories:
+        conversation_histories[session_id] = []
+
     custom_persona = """
     You are an AI assistant tasked with answering user queries based on a knowledge base. The user query is transcribed from voice audio, so there may be transcription errors.
 
@@ -367,42 +429,91 @@ def get_additional_context(query, api_key, project_id, session_id):
     Provide a concise answer, limited to three sentences.
     """
 
+    # Set API key
+    client_openai.api_key = api_key
+
+    # Retry logic
     tries = 0
     max_retries = 2
     while tries <= max_retries:
         try:
-            print(api_key)
-            CustomGPT.api_key = api_key
-            logger.info(f"CustomGPT query sent:: {query}")
-            conversation = CustomGPT.Conversation.send(
-                project_id=project_id, 
-                session_id=session_id, 
-                prompt=query, 
-                custom_persona=custom_persona
+            logger.info(f"OpenAI API query sent:: {query}")
+            # Retrieve contexts from the Qdrant vector database
+            retrieved_contexts = query_qdrant(query)
+            context_text = "\n".join(retrieved_contexts)
+            logger.info(f"Qdrant context retrieved: {context_text}")
+
+            # Construct the conversation messages
+            messages = [
+                {"role": "system", "content": custom_persona},
+                {"role": "system", "content": f"Retrieved Context: {context_text}"},
+                {"role": "user", "content": query}
+            ]
+
+            # Add conversation history
+            messages.extend(conversation_histories[session_id])
+            
+            # Add current query
+            messages.append({"role": "user", "content": query})
+            
+            response = client_openai.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=messages
             )
-            logger.info(f"CustomGPT response: {conversation}")
-            return conversation.parsed.data.openai_response  # Correct f-string is unnecessary
+
+            logger.info(f"OpenAI response: {response}")
+            assistant_response = response.choices[0].message.content.strip()
+
+            # Store the exchange in conversation history
+            conversation_histories[session_id].append({"role": "user", "content": query})
+            conversation_histories[session_id].append({"role": "assistant", "content": assistant_response})
+
+            return assistant_response
+            # TODO: Ensure that this assistantresponse is the same as the one from CustomGPT
         except Exception as e:
-            logger.error(f"Get Additional Context failed::Try {tries}::Error: {conversation}")
-            time.sleep(2)
+            logger.error(f"Get Additional Context failed::Try {tries}::Error: {str(e)}")
+            time.sleep(2)  # Wait before retrying
         tries += 1
 
     return "Sorry, I didn't get your query."
 
-def create_session(api_key, project_id, caller_number):
-    tries = 0
-    max_retries = 2
-    while tries <= max_retries:
-        try:
-            CustomGPT.api_key = api_key
-            session = CustomGPT.Conversation.create(project_id=project_id, name=caller_number)
-            logger.info(f"CustomGPT Session Created::{session.parsed.data}");
-            return session.parsed.data.session_id
-        except Exception as e:
-            logger.error(f"Error in create_session::Try {tries}::Error: {e}")
-        tries += 1
+# def create_session(api_key, project_id, caller_number):
+#     tries = 0
+#     max_retries = 2
+#     while tries <= max_retries:
+#         try:
+#             CustomGPT.api_key = api_key
+#             session = CustomGPT.Conversation.create(project_id=project_id, name=caller_number)
+#             logger.info(f"CustomGPT Session Created::{session.parsed.data}");
+#             return session.parsed.data.session_id
+#         except Exception as e:
+#             logger.error(f"Error in create_session::Try {tries}::Error: {e}")
+#         tries += 1
 
-    session_id = uuid.uuid4()
+#     session_id = uuid.uuid4()
+#     return session_id
+
+# OPENAI use random session ID for now
+# Next Step: # Start the conversation with a system message
+# conversation_history = [
+#     {"role": "system", "content": "You are a helpful assistant."}
+# ]
+# conversation_history.append({"role": "user", "content": user_input})
+# conversation_history.append({"role": "assistant", "content": assistant_reply})
+
+def create_session(api_key, project_id, caller_number):
+
+    client_openai.api_key = api_key
+
+    # Generate a unique session ID
+    session_id = str(uuid.uuid4())
+    logger.info(f"Session Created for caller {caller_number}: {session_id}")
+    
+    # Initialize conversation history for this session
+    conversation_histories[session_id] = [
+        {"role": "system", "content": "You are a helpful assistant."}
+    ]
+    
     return session_id
 
 async def send_session_update(openai_ws, phone_number, introduction):
@@ -486,3 +597,94 @@ async def clear_buffer(websocket, openai_ws, stream_sid):
     }
     await openai_ws.send(json.dumps({"type": "response.cancel"}))
     await websocket.send_json(audio_delta)
+
+# RAG
+def get_embedding(text, model="text-embedding-3-small"):
+   text = text.replace("\n", " ")
+   return client.embeddings.create(input = [text], model=model).data[0].embedding
+
+def query_qdrant(query_text):
+    query_embedding = get_embedding(query_text)
+    search_result = vectordb_client.search(
+        collection_name="respiratory_disease_guide",
+        query_vector=query_embedding,
+        limit=5
+    )
+    return [hit.payload["text"] for hit in search_result]
+
+def rag_system(user_query):
+    retrieved_contexts = query_qdrant(user_query)
+    context_text = "\n".join(retrieved_contexts)
+    
+    messages = [
+        {"role": "system", "content": "You are an AI doctor specializing in respiratory diseases. Respond to the user in a professional and conversational way. Provide clear, empathetic, and helpful guidance. Not too structured."},
+        {"role": "system", "content": f"Retrieved Context: {context_text}"},
+        {"role": "user", "content": user_query}
+    ]
+    
+    # Generate the response using ChatCompletion endpoint
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=messages,
+        max_tokens=200,
+        temperature=0.7
+    )
+
+    return response.choices[0].message.content.strip()
+
+async def generate_conversation_summary(session_id):
+    """Generate a summary of the conversation for a given session."""
+    if session_id not in conversation_histories or not conversation_histories[session_id]:
+        return None
+
+    try:
+        # Format the conversation for summarization
+        formatted_convo = "\n".join([
+            f"{'User' if msg['role'] == 'user' else 'Assistant'}: {msg['content']}"
+            for msg in conversation_histories[session_id]
+            if msg['role'] in ['user', 'assistant']
+        ])
+
+        # Use OpenAI to generate a summary
+        summary_prompt = f"""
+                            Please provide a concise summary of this conversation, highlighting:
+                            1. Main topics discussed
+                            2. Key questions asked
+                            3. Important information provided
+
+                            Conversation:
+                            {formatted_convo}
+                        """
+
+        summary_response = client_openai.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant tasked with summarizing conversations."},
+                {"role": "user", "content": summary_prompt}
+            ]
+        )
+
+        summary = summary_response.choices[0].message.content.strip()
+        
+        # Store the summary (you can modify this to store in a database)
+        conversation_summaries[session_id] = {
+            'summary': summary,
+            'timestamp': datetime.datetime.now().isoformat(),
+            'caller_number': session_caller_numbers.get(session_id, 'Unknown'),
+            'full_conversation': conversation_histories[session_id]
+        }
+        
+        return summary
+    except Exception as e:
+        logger.error(f"Error generating conversation summary: {e}")
+        return None
+
+@app.get("/conversation-summary/{session_id}")
+async def get_conversation_summary(session_id: str):
+    """API endpoint to retrieve conversation summary."""
+    conversation_histories = {}  # Stores ongoing conversations
+    conversation_summaries = {}  # Stores generated summaries
+    session_caller_numbers = {}  # Maps sessions to caller numbers
+    if session_id in conversation_summaries:
+        return conversation_summaries[session_id]
+    return {"error": "Session not found"}

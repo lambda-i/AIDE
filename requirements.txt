@@ -32,3 +32,6 @@ customgpt_client
 gunicorn
 python-multipart
 redis
+openai
+qdrant_client
+pymupdf4llm
