@@ -2,3 +2,11 @@ streamlit
 openai
 python-dotenv
 qdrant-client
+websockets
+fastapi
+twilio
+uvicorn
+
+# delete after done
+customgpt_client
+redis
