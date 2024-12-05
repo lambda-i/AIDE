@@ -137,7 +137,7 @@ async def handle_incoming_call(
     request: Request,
     background_tasks: BackgroundTasks,
     # project_id: int,
-    api_key: Optional[str] = CUSTOMGPT_API_KEY,
+    api_key: Optional[str] = OPENAI_API_KEY,
     phone_number: Optional[str] = None,
     introduction: Optional[str] = DEFAULT_INTRO
 ):
