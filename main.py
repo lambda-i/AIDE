@@ -115,7 +115,7 @@ SYSTEM_MESSAGE = """
 """
 
 
-VOICE = 'nova'
+VOICE = 'alloy'
 LOG_EVENT_TYPES = [
     'response.content.done', 'response.done',
     'input_audio_buffer.committed', 'input_audio_buffer.speech_stopped',
