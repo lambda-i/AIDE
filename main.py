@@ -38,7 +38,7 @@ vectordb_client = QdrantClient(
     api_key=os.getenv("QDRANT_API_KEY")
 )
 
-redis_url = urllib.parse.urlparse(os.environ.get("REDIS_URL"))
+redis_url = urllib.parse.urlparse(os.environ.get("REDISCLOUD_URL"))
 redis_client = redis.Redis(host=redis_url.hostname, port=redis_url.port, password=redis_url.password, ssl=True, ssl_cert_reqs=None)
 current_dir = os.path.dirname(__file__)
 mp3_file_path = os.path.join(current_dir, "static", "typing.wav")
