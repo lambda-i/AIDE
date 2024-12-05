@@ -693,9 +693,9 @@ async def generate_conversation_summary(session_id):
 @app.get("/conversation-summary/{session_id}")
 async def get_conversation_summary(session_id: str):
     """API endpoint to retrieve conversation summary."""
-    conversation_histories = {}  # Stores ongoing conversations
-    conversation_summaries = {}  # Stores generated summaries
-    session_caller_numbers = {}  # Maps sessions to caller numbers
+    # conversation_histories = {}  # Stores ongoing conversations
+    # conversation_summaries = {}  # Stores generated summaries
+    # session_caller_numbers = {}  # Maps sessions to caller numbers
     if session_id in conversation_summaries:
         return conversation_summaries[session_id]
     return {"error": "Session not found"}
