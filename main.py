@@ -135,7 +135,6 @@ async def handle_incoming_call(
     phone_number = PERSONAL_PHONE_NUMBER
     encoded_phone_number = urllib.parse.quote_plus(phone_number)
     encoded_introduction = urllib.parse.quote_plus(introduction)
-    # stream = Stream(url=f'wss://{host}/media-stream/project/{project_id}/session/{session_id}/{encoded_phone_number}/{encoded_introduction}')
     stream = Stream(
         url=f"wss://{host}/media-stream/session/{session_id}/{encoded_phone_number}/{encoded_introduction}"
     )
