@@ -32,24 +32,33 @@ from src.assets.prompts import DEFAULT_INTRO, SYSTEM_MESSAGE
 
 load_dotenv()
 
-CURR_SESSION_ID = None
-active_connections = []
+##############################################################
+##############################################################
+################### INITIALISING ENV VARS ####################
+##############################################################
+##############################################################
 
+redis_url = urllib.parse.urlparse(os.environ.get("REDISCLOUD_URL"))
+account_sid = os.environ["TWILIO_ACCOUNT_SID"]
+auth_token = os.environ["TWILIO_AUTH_TOKEN"]
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+if not OPENAI_API_KEY:
+    raise ValueError("Missing the OpenAI API key. Please set it in the .env file.")
+PORT = int(os.getenv("PORT", 5050))
+PERSONAL_PHONE_NUMBER = os.getenv("PERSONAL_PHONE_NUMBER")
 
-# for session history
-conversation_histories = {}
-# for summaries
-conversation_summaries = {}
-session_caller_numbers = {}
+##############################################################
+##############################################################
+################### INITIALISING CLIENTS #####################
+##############################################################
+##############################################################
 
-# RAG
 client_openai = OpenAI()
 
 vectordb_client = QdrantClient(
     url=os.getenv("QDRANT_URL"), api_key=os.getenv("QDRANT_API_KEY")
 )
 
-redis_url = urllib.parse.urlparse(os.environ.get("REDISCLOUD_URL"))
 redis_client = redis.Redis(
     host=redis_url.hostname,
     port=redis_url.port,
@@ -57,16 +66,26 @@ redis_client = redis.Redis(
     ssl=True,
     ssl_cert_reqs=None,
 )
-current_dir = os.path.dirname(__file__)
-mp3_file_path = os.path.join(current_dir, "static", "typing.wav")
-account_sid = os.environ["TWILIO_ACCOUNT_SID"]
-auth_token = os.environ["TWILIO_AUTH_TOKEN"]
-client = Client(account_sid, auth_token)
-CUSTOMGPT_API_KEY = os.getenv("CUSTOMGPT_API_KEY")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-PORT = int(os.getenv("PORT", 5050))
 
+twilio_client = Client(account_sid, auth_token)
 
+app = FastAPI()
+
+##############################################################
+##############################################################
+################# INITIALISING LOCAL VARS ####################
+##############################################################
+##############################################################
+
+CURR_SESSION_ID = None  # Track current session for frontend to join
+active_connections = []
+
+conversation_histories = {}  # for session history
+
+conversation_summaries = {}  # for summaries
+session_caller_numbers = {}
+
+# LOGGER
 VOICE = "alloy"
 LOG_EVENT_TYPES = [
     "response.content.done",
@@ -78,17 +97,13 @@ LOG_EVENT_TYPES = [
     "response.audio.done",
     "conversation.item.input_audio_transcription.completed",
 ]
-
-PERSONAL_PHONE_NUMBER = os.getenv("PERSONAL_PHONE_NUMBER")
-
-app = FastAPI()
-app.mount("/static", StaticFiles(directory="static"), name="static")
-
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-if not OPENAI_API_KEY:
-    raise ValueError("Missing the OpenAI API key. Please set it in the .env file.")
+# MOUNT TYPING SOUND
+current_dir = os.path.dirname(__file__)
+mp3_file_path = os.path.join(current_dir, "static", "typing.wav")
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 @app.api_route("/incoming-call", methods=["GET", "POST"])
@@ -396,7 +411,7 @@ def start_recording(call_id: str, session_id: str, host: str):
     time.sleep(2)
     # Start the recording
     try:
-        recording = client.calls(call_id).recordings.create(
+        recording = twilio_client.calls(call_id).recordings.create(
             recording_status_callback=f"https://{host}/log-recording/{session_id}",
             recording_status_callback_event=["in-progress", "completed"],
             recording_channels="dual",
@@ -580,7 +595,13 @@ async def clear_buffer(websocket, openai_ws, stream_sid):
     await websocket.send_json(audio_delta)
 
 
-# RAG
+##############################################################
+##############################################################
+################### VOICE RAG COMPONENT ######################
+##############################################################
+##############################################################
+
+
 def get_embedding(text, model="text-embedding-3-small"):
     text = text.replace("\n", " ")
     return client_openai.embeddings.create(input=[text], model=model).data[0].embedding
@@ -610,7 +631,7 @@ def rag_system(user_query):
     ]
 
     # Generate the response using ChatCompletion endpoint
-    response = client.chat.completions.create(
+    response = client_openai.chat.completions.create(
         model="gpt-4o-mini", messages=messages, max_tokens=200, temperature=0.7
     )
 
