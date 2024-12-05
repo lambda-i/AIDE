@@ -48,7 +48,7 @@ client = Client(account_sid, auth_token)
 CUSTOMGPT_API_KEY = os.getenv('CUSTOMGPT_API_KEY')
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 PORT = int(os.getenv('PORT', 5050))
-DEFAULT_INTRO = 'Hello! How are you feeling today'
+DEFAULT_INTRO = 'Aloha! I am the State Health Planning & Development Agency AI Doctor. How are you feeling today?'
 SYSTEM_MESSAGE = """
 # Core Purpose & Initialization
 - Start session with {introduction}
@@ -115,7 +115,7 @@ SYSTEM_MESSAGE = """
 """
 
 
-VOICE = 'alloy'
+VOICE = 'nova'
 LOG_EVENT_TYPES = [
     'response.content.done', 'response.done',
     'input_audio_buffer.committed', 'input_audio_buffer.speech_stopped',
@@ -395,38 +395,6 @@ def start_recording(call_id: str, session_id: str, host: str):
     except Exception as e:
         logger.error(f"Failed to start recording for Call SID: {call_id}. Error: {e}")
 
-# def get_additional_context(query, api_key, project_id, session_id):
-#     custom_persona = """
-#     You are an AI assistant tasked with answering user queries based on a knowledge base. The user query is transcribed from voice audio, so there may be transcription errors.
-
-#     When responding to the user query, follow these guidelines:
-#     1. Match the query to the knowledge base using both phonetic and semantic similarity.
-#     2. Attempt to answer even if the match isn't perfect, as long as it seems reasonably close.
-
-#     Provide a concise answer, limited to three sentences.
-#     """
-
-#     tries = 0
-#     max_retries = 2
-#     while tries <= max_retries:
-#         try:
-#             print(api_key)
-#             CustomGPT.api_key = api_key
-#             logger.info(f"CustomGPT query sent:: {query}")
-#             conversation = CustomGPT.Conversation.send(
-#                 project_id=project_id, 
-#                 session_id=session_id, 
-#                 prompt=query, 
-#                 custom_persona=custom_persona
-#             )
-#             logger.info(f"CustomGPT response: {conversation}")
-#             return conversation.parsed.data.openai_response  # Correct f-string is unnecessary
-#         except Exception as e:
-#             logger.error(f"Get Additional Context failed::Try {tries}::Error: {conversation}")
-#             time.sleep(2)
-#         tries += 1
-
-#     return "Sorry, I didn't get your query."
 
 ### VECTOR BASED RAG
 # def get_additional_context(query, api_key, project_id, session_id):
@@ -493,30 +461,6 @@ def get_additional_context(query, api_key, session_id):
         tries += 1
 
     return "Sorry, I didn't get your query."
-
-# def create_session(api_key, project_id, caller_number):
-#     tries = 0
-#     max_retries = 2
-#     while tries <= max_retries:
-#         try:
-#             CustomGPT.api_key = api_key
-#             session = CustomGPT.Conversation.create(project_id=project_id, name=caller_number)
-#             logger.info(f"CustomGPT Session Created::{session.parsed.data}");
-#             return session.parsed.data.session_id
-#         except Exception as e:
-#             logger.error(f"Error in create_session::Try {tries}::Error: {e}")
-#         tries += 1
-
-#     session_id = uuid.uuid4()
-#     return session_id
-
-# OPENAI use random session ID for now
-# Next Step: # Start the conversation with a system message
-# conversation_history = [
-#     {"role": "system", "content": "You are a helpful assistant."}
-# ]
-# conversation_history.append({"role": "user", "content": user_input})
-# conversation_history.append({"role": "assistant", "content": assistant_reply})
 
 # def create_session(api_key, project_id, caller_number):
 def create_session(api_key, caller_number):
@@ -700,9 +644,6 @@ async def generate_conversation_summary(session_id):
 @app.get("/conversation-summary/{session_id}")
 async def get_conversation_summary(session_id: str):
     """API endpoint to retrieve conversation summary."""
-    # conversation_histories = {}  # Stores ongoing conversations
-    # conversation_summaries = {}  # Stores generated summaries
-    # session_caller_numbers = {}  # Maps sessions to caller numbers
     if session_id in conversation_summaries:
         return conversation_summaries[session_id]
     return {"error": "Session not found"}
