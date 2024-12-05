@@ -136,7 +136,7 @@ async def index_page():
 async def handle_incoming_call(
     request: Request,
     background_tasks: BackgroundTasks,
-    project_id: int,
+    # project_id: int,
     api_key: Optional[str] = CUSTOMGPT_API_KEY,
     phone_number: Optional[str] = None,
     introduction: Optional[str] = DEFAULT_INTRO
@@ -145,9 +145,10 @@ async def handle_incoming_call(
     form_data = await request.form() if request.method == "POST" else request.query_params
     caller_number = form_data.get('From', 'Unknown')
     logger.info(f"Caller: {caller_number}")
-    session_id = create_session(api_key, project_id, caller_number)
+    # session_id = create_session(api_key, project_id, caller_number)
+    session_id = create_session(api_key, caller_number)
     session_caller_numbers[session_id] = caller_number #check
-    logger.info(f"Project::{project_id}")
+    # logger.info(f"Project::{project_id}")
     logger.info(f"Incoming call handled. Session ID: {session_id}")
     host = request.url.hostname
     call_id = form_data.get("CallSid")
@@ -157,7 +158,8 @@ async def handle_incoming_call(
     phone_number=PERSONAL_PHONE_NUMBER
     encoded_phone_number = urllib.parse.quote_plus(phone_number)
     encoded_introduction = urllib.parse.quote_plus(introduction)
-    stream = Stream(url=f'wss://{host}/media-stream/project/{project_id}/session/{session_id}/{encoded_phone_number}/{encoded_introduction}')
+    # stream = Stream(url=f'wss://{host}/media-stream/project/{project_id}/session/{session_id}/{encoded_phone_number}/{encoded_introduction}')
+    stream = Stream(url=f'wss://{host}/media-stream/session/{session_id}/{encoded_phone_number}/{encoded_introduction}')
     stream.parameter(name='api_key', value=api_key)
     connect.append(stream)
     response.append(connect)
@@ -194,8 +196,10 @@ async def handle_end_call(request: Request, session_id: Optional[str] = None, ph
 
     return HTMLResponse(content=str(response), media_type="application/xml")
 
-@app.websocket("/media-stream/project/{project_id}/session/{session_id}/{phone_number}/{introduction}")
-async def handle_media_stream(websocket: WebSocket, project_id: int, session_id: str, phone_number: str, introduction: str):
+# @app.websocket("/media-stream/project/{project_id}/session/{session_id}/{phone_number}/{introduction}")
+@app.websocket("/media-stream/session/{session_id}/{phone_number}/{introduction}")
+# async def handle_media_stream(websocket: WebSocket, project_id: int, session_id: str, phone_number: str, introduction: str):
+async def handle_media_stream(websocket: WebSocket, session_id: str, phone_number: str, introduction: str):
     logger.info(f"WebSocket connection attempt. Session ID: {session_id}")
     await websocket.accept()
     logger.info(f"WebSocket connection accepted. Session ID: {session_id}")
@@ -311,7 +315,8 @@ async def handle_media_stream(websocket: WebSocket, project_id: int, session_id:
                                         await play_typing(websocket, stream_sid)
                                         logger.info("CustomGPT Started")
                                         start_time = time.time()
-                                        result = get_additional_context(arguments['query'], api_key, project_id, session_id)
+                                        #result = get_additional_context(arguments['query'], api_key, project_id, session_id)
+                                        result = get_additional_context(arguments['query'], api_key, session_id)
                                         logger.info(f"Clear Audio::Additional Context gained")
                                         await clear_buffer(websocket, openai_ws, stream_sid)
                                         end_time = time.time()
@@ -413,7 +418,8 @@ def start_recording(call_id: str, session_id: str, host: str):
 #     return "Sorry, I didn't get your query."
 
 ### VECTOR BASED RAG
-def get_additional_context(query, api_key, project_id, session_id):
+# def get_additional_context(query, api_key, project_id, session_id):
+def get_additional_context(query, api_key, session_id):
 
     # Initialize conversation history for new sessions
     if session_id not in conversation_histories:
@@ -501,7 +507,8 @@ def get_additional_context(query, api_key, project_id, session_id):
 # conversation_history.append({"role": "user", "content": user_input})
 # conversation_history.append({"role": "assistant", "content": assistant_reply})
 
-def create_session(api_key, project_id, caller_number):
+# def create_session(api_key, project_id, caller_number):
+def create_session(api_key, caller_number):
 
     client_openai.api_key = api_key
 
@@ -601,7 +608,7 @@ async def clear_buffer(websocket, openai_ws, stream_sid):
 # RAG
 def get_embedding(text, model="text-embedding-3-small"):
    text = text.replace("\n", " ")
-   return client.embeddings.create(input = [text], model=model).data[0].embedding
+   return client_openai.embeddings.create(input = [text], model=model).data[0].embedding
 
 def query_qdrant(query_text):
     query_embedding = get_embedding(query_text)
