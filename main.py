@@ -264,6 +264,8 @@ async def handle_media_stream(websocket: WebSocket, session_id: str, phone_numbe
                                 break
                     except WebSocketDisconnect:
                         logger.info(f"Twilio WebSocket disconnected. Session ID: {session_id}")
+                        await generate_conversation_summary(session_id)
+                        await get_conversation_summary(session_id)
                         break
                     except RuntimeError as e:
                         if "WebSocket is not connected" in str(e):
