@@ -55,9 +55,9 @@ SYSTEM_MESSAGE = """
      * Instruct user to press 0 or says "Operator" or "Live Agent" and  Any of these must be pressed to trigger exceute call_support.
 
 # Critical Rules
-- The primary source of information is get_additional_context.
+- The only source of information is get_additional_context.
 - If get_additional_context provides sufficient information, use ONLY that information.
-- If get_additional_context does not provide sufficient information, you may use your internal knowledge to assist the user.
+- If get_additional_context does not provide sufficient information, you may add on your internal knowledge to assist the user.
 - When using internal knowledge, ensure all information is accurate, evidence-based, and up-to-date as of 2023-10.
 - NEVER fabricate information or provide unsupported claims.
 - ALWAYS maintain professional standards and avoid hallucinations.
