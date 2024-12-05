@@ -31,6 +31,10 @@ import pymupdf4llm
 
 load_dotenv()
 
+CURR_SESSION_ID = None
+active_connections = []
+
+
 # for session history
 conversation_histories = {}
 # for summaries
@@ -162,6 +166,7 @@ async def handle_incoming_call(
     logger.info(f"Caller: {caller_number}")
     # session_id = create_session(api_key, project_id, caller_number)
     session_id = create_session(api_key, caller_number)
+    CURR_SESSION_ID = session_id
     session_caller_numbers[session_id] = caller_number  # check
     # logger.info(f"Project::{project_id}")
     logger.info(f"Incoming call handled. Session ID: {session_id}")
@@ -741,13 +746,11 @@ async def get_conversation_summary(session_id: str):
 ##############################################################
 ##############################################################
 
-active_connections = []
-
 
 @app.get("/api/get-session-id")
 async def generate_session():
     try:
-        return JSONResponse(content={"sessionId": session_id})
+        return JSONResponse(content={"sessionId": CURR_SESSION_ID})
     except:
         session_id = str(uuid.uuid4())
         return JSONResponse(content={"sessionId": session_id})
