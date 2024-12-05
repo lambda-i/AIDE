@@ -268,8 +268,6 @@ async def handle_media_stream(websocket: WebSocket, session_id: str, phone_numbe
                         # await get_conversation_summary(session_id)
                         summary = await get_conversation_summary(session_id)
                         print(f"Conversation Summary for Session {session_id}: {summary}")
-    else:
-        print(f"Failed to retrieve summary for Session {session_id}: {summary['error']}")
                         break
                     except RuntimeError as e:
                         if "WebSocket is not connected" in str(e):
