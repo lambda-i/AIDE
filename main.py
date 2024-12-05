@@ -678,7 +678,7 @@ async def generate_conversation_summary(session_id):
         # Store the summary (you can modify this to store in a database)
         conversation_summaries[session_id] = {
             'summary': summary,
-            'timestamp': datetime.datetime.now().isoformat(),
+            'timestamp': datetime.now().isoformat(),
             'caller_number': session_caller_numbers.get(session_id, 'Unknown'),
             'full_conversation': conversation_histories[session_id]
         }
