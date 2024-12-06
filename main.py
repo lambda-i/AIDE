@@ -106,6 +106,7 @@ mp3_file_path = os.path.join(current_dir, "static", "typing.wav")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
+# Takes in the call from Twilio and Streams it into OPENAI RealTime API
 @app.api_route("/incoming-call", methods=["GET", "POST"])
 async def handle_incoming_call(
     request: Request,
@@ -182,6 +183,7 @@ async def handle_end_call(
     return HTMLResponse(content=str(response), media_type="application/xml")
 
 
+# RealTime
 @app.websocket("/media-stream/session/{session_id}/{phone_number}/{introduction}")
 async def handle_media_stream(
     websocket: WebSocket, session_id: str, phone_number: str, introduction: str
@@ -328,7 +330,13 @@ async def handle_media_stream(
                                         await play_typing(websocket, stream_sid)
                                         logger.info("CustomGPT Started")
                                         start_time = time.time()
-                                        # result = get_additional_context(arguments['query'], api_key, project_id, session_id)
+                                        # Store the user's query
+                                        conversation_histories[session_id].append(
+                                            {
+                                                "role": "user",
+                                                "content": arguments["query"],
+                                            }
+                                        )
                                         result = get_additional_context(
                                             arguments["query"], api_key, session_id
                                         )
@@ -472,10 +480,7 @@ def get_additional_context(query, api_key, session_id):
             logger.info(f"OpenAI response: {response}")
             assistant_response = response.choices[0].message.content.strip()
 
-            # Store the exchange in conversation history
-            conversation_histories[session_id].append(
-                {"role": "user", "content": query}
-            )
+            # Upload KB fetching summaries to history
             conversation_histories[session_id].append(
                 {"role": "assistant", "content": assistant_response}
             )

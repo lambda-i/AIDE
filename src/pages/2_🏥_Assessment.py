@@ -9,8 +9,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-BASE_URL = os.getenv("LOCAL_URL")
-WS_BASE_URL = os.getenv("LOCAL_WS_URL")
+# GET BACKEND URL
+host = os.getenv("HOST")
 
 # Initialize session state
 if "messages" not in st.session_state:
@@ -23,10 +23,11 @@ async def start_stream():
     asyncio.set_event_loop(loop)
 
     # Get session id from server
-    SESSION_ID_URL = f"{BASE_URL}/api/get-session-id"
+    SESSION_ID_URL = f"http://{host}/api/get-session-id"
     response = requests.get(SESSION_ID_URL)
     print(f"Reponse Received: {response.json()}")
     session_id = response.json()["sessionId"]
+    st.session_state.session_id = session_id
     print(f"Session ID generated: {session_id}")
 
     try:
@@ -36,11 +37,9 @@ async def start_stream():
 
 
 async def connect_to_stream(session_id):
-    STREAM_URI = f"{WS_BASE_URL}/stream/{session_id}"
+    STREAM_URI = f"ws://{host}/stream/{session_id}"
 
-    async with websockets.connect(
-        STREAM_URI, extra_headers={"Origin": "http://localhost:8501"}
-    ) as websocket:
+    async with websockets.connect(STREAM_URI) as websocket:
         try:
             while True:
                 message = await websocket.recv()
