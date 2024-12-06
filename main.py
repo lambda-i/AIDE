@@ -359,8 +359,9 @@ async def handle_media_stream(
                                                 "role": "user",
                                                 "content": arguments["query"],
                                             }
-                                            print("Adding user query into conversation history when calling RAG")
                                         )
+                                        print("Adding user query into conversation history when calling RAG")
+                                        
                                         result = get_additional_context(
                                             arguments["query"], api_key, session_id
                                         )
