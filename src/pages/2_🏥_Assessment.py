@@ -8,7 +8,7 @@ import os
 from dotenv import load_dotenv
 from openai import OpenAI
 from datetime import datetime
-import time
+from streamlit_modal import Modal
 
 load_dotenv()
 
@@ -48,6 +48,8 @@ def initialise_chatbot():
             {"role": "assistant", "content": "Hi! How may I help you today!"}
         ]
 
+    st.session_state.show_help = False
+
 
 # Function to display the chat history on the app
 def display_chat_history():
@@ -67,11 +69,11 @@ def handle_user_input():
             st.write(add_timestamp(prompt))
 
         # Generate assistant's response
-        generate_assistant_response(prompt)
+        generate_assistant_response()
 
 
 # Function to generate and display assistant response using Flask
-def generate_assistant_response(user_input):
+def generate_assistant_response():
     with st.chat_message("assistant"):
         # replace with API call from minibackend
         completion = st.session_state["openai_model"].chat.completions.create(
@@ -96,6 +98,8 @@ def help_button(ready=False):
     # Define a unique key for the button
     if st.button("Talk to AIDoc", icon="🚨", use_container_width=True):
         st.write("Circle button clicked!")
+        st.session_state.show_help = not st.session_state.show_help
+        toggle_help()
     print("Alert button pressed.")
 
     if ready:
@@ -126,6 +130,14 @@ def add_timestamp(message):
     formatted_datetime = current_datetime.strftime("%-d-%b-%y %H:%M")
     # Output response with date & time
     return f"[{formatted_datetime}]\n\n{message}"
+
+
+# Show popup
+def toggle_help():
+    modal = Modal(key="PH Modal", title="Talk to our AI Doc!")
+    if st.session_state.show_help:
+        with modal.container():
+            st.markdown(f"### Alloy: {AI_DOC_NUM}")
 
 
 async def start_stream():
