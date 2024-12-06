@@ -287,10 +287,9 @@ async def handle_media_stream(
                             response = json.loads(openai_message)
                             start_time = time.time()
                             # if response["type"] in LOG_EVENT_TYPES:
-                            if response["type"]:
-                                logger.info(
-                                    f"Received event: {response['type']}::{response}"
-                                )
+                            logger.info(
+                                f"Received event: {response['type']}::{response}"
+                            )
                             if response["type"] == "session.updated":
                                 logger.info(f"Session updated successfully: {response}")
                             if response["type"] == "input_audio_buffer.speech_started":
