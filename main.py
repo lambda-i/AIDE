@@ -320,7 +320,8 @@ async def handle_media_stream(
                                     if session_id not in conversation_histories:
                                         conversation_histories[session_id] = []
                                     assistant_text = response['response']['output'][0]['content'][0]['transcript']
-                                if ['response']['output'][0]['content'][0]['transcript']:
+                                    print(assistant_text)
+                                if response['response']['output'][0]['content'][0]['transcript']:
                                     conversation_histories[session_id].append({"role": "assistant", "content": assistant_text})
                                     print("Adding response into conversation history from response.done")
 
