@@ -18,7 +18,6 @@ from typing import Optional
 from twilio.rest import Client
 from twilio.twiml.voice_response import VoiceResponse, Connect, Redirect, Dial, Stream
 from dotenv import load_dotenv
-from customgpt_client import CustomGPT
 import uuid
 import logging
 import time
@@ -27,7 +26,6 @@ from datetime import datetime
 
 from openai import OpenAI
 from qdrant_client import QdrantClient
-import pymupdf4llm
 from src.assets.prompts import DEFAULT_INTRO, SYSTEM_MESSAGE
 
 load_dotenv()
