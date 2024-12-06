@@ -296,6 +296,14 @@ async def handle_media_stream(
                                 logger.info(f"Input Audio Detected::{response}")
                                 await clear_buffer(websocket, openai_ws, stream_sid)
 
+                            # Handle new user messages
+                            if response.get("type") == "conversation.item.create":
+                                item = response.get("item", {})
+                                if item.get("type") == "message" and item.get("role") == "user":
+                                    user_text_parts = [c["text"] for c in item["content"] if c["type"] == "text"]
+                                    user_text = " ".join(user_text_parts)
+                                    conversation_histories[session_id].append({"role": "user", "content": user_text})
+
                             if response[
                                 "type"
                             ] == "response.audio.delta" and response.get("delta"):
