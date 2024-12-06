@@ -301,6 +301,8 @@ async def handle_media_stream(
                             if response.get("type") == "conversation.item.create":
                                 item = response.get("item", {})
                                 if item.get("type") == "message":
+                                    if session_id not in conversation_histories:
+                                        conversation_histories[session_id] = []
                                     if item.get("role") == "user":
                                         # Handle user message as before
                                         user_text_parts = [c["text"] for c in item["content"] if c["type"] == "text"]
@@ -346,7 +348,10 @@ async def handle_media_stream(
                                         await play_typing(websocket, stream_sid)
                                         logger.info("CustomGPT Started")
                                         start_time = time.time()
+                                        
                                         # Store the user's query
+                                        if session_id not in conversation_histories:
+                                            conversation_histories[session_id] = []
                                         conversation_histories[session_id].append(
                                             {
                                                 "role": "user",
