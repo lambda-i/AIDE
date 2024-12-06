@@ -6,6 +6,9 @@ from datetime import datetime
 import requests
 import os
 from dotenv import load_dotenv
+from openai import OpenAI
+from datetime import datetime
+import time
 
 load_dotenv()
 
@@ -14,24 +17,41 @@ host = os.getenv("HOST")
 AI_DOC_NUM = os.getenv("PERSONAL_PHONE_NUMBER")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-# Initialize session state
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-
 
 def main():
     st.title("Voice Call Conversation")
 
-    # Display chat messages
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.write(f"[{message['timestamp']}] {message['content']}")
+    # Initialise memory context and openai client
+    initialise_chatbot()
+    display_chat_history()
+    handle_user_input()
+
+    # Render the circle with a button
+    help_button()
 
     # Button for clearing conversatin history
     clear_conversation_history_button()
 
-    # Render the circle with a button
-    help_button()
+
+def initialise_chatbot():
+    # You might still want to keep this for OpenAI integration
+    if "openai_model" not in st.session_state:  # Default model
+        client = OpenAI()
+        client.api_key = os.getenv("OPENAI_API_KEY")
+        st.session_state["openai_model"] = client
+
+    if "messages" not in st.session_state or len(st.session_state["messages"]) == 0:
+        st.session_state.messages = [
+            {"role": "assistant", "content": "Hi! How may I help you today!"}
+        ]
+
+
+# Function to display the chat history on the app
+def display_chat_history():
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            message = message["content"]
+            st.write(add_timestamp(message))
 
 
 # Function to handle user input and response generation
@@ -40,38 +60,32 @@ def handle_user_input():
     if prompt := st.chat_input("Ask me anything :)"):
         # Add user input to the chat history
         st.session_state.messages.append({"role": "user", "content": prompt})
-        display_user_message(prompt)
+        with st.chat_message("user"):
+            st.write(add_timestamp(prompt))
 
         # Generate assistant's response
         generate_assistant_response(prompt)
 
 
-# Function to display user message
-def display_user_message(prompt):
-    with st.chat_message("user"):
-        st.markdown(prompt)
-
-
 # Function to generate and display assistant response using Flask
 def generate_assistant_response(user_input):
     with st.chat_message("assistant"):
-        # Call the Flask API
-        response = requests.post(
-            "https://aira-77ad510980a9.herokuapp.com/api/get_response",
-            json={"user_input": user_input},
+        # replace with API call from minibackend
+        completion = st.session_state["openai_model"].chat.completions.create(
+            model="gpt-4o-mini",  # Use the desired GPT model (e.g., gpt-3.5-turbo, gpt-4)
+            messages=st.session_state["messages"],  # Provide the conversation history
+            temperature=0.7,  # Controls creativity
+            max_tokens=500,  # Limits the length of the response
         )
+        # Extract and return the assistant's response
+        response = completion.choices[0].message.content
 
-        if response.status_code == 200:
-            response_data = response.json()
-            assistant_response = response_data.get("response")
-
+        if response != None:
             # Add assistant response to the session state (chat history)
-            st.session_state.messages.append(
-                {"role": "assistant", "content": assistant_response}
-            )
-            st.markdown(assistant_response)  # Display the assistant's response
+            st.session_state.messages.append({"role": "assistant", "content": response})
+            st.write(add_timestamp(response))
         else:
-            st.markdown("Error: Unable to get response from the server.")
+            st.write(add_timestamp("Error: Unable to get response from the server."))
 
 
 # Function to display the circle with a button
@@ -100,7 +114,15 @@ def clear_conversation_history_button():
     # Clear chat history
     if st.button("Clear History"):
         st.session_state.messages = []
-        st.experimental_rerun()
+
+
+# Adds date time to message to reply
+def add_timestamp(message):
+    # Get timestamp of message
+    current_datetime = datetime.now()
+    formatted_datetime = current_datetime.strftime("%-d-%b-%y %H:%M")
+    # Output response with date & time
+    return f"[{formatted_datetime}]\n\n{message}"
 
 
 async def start_stream():
