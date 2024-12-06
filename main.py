@@ -298,13 +298,21 @@ async def handle_media_stream(
                                 logger.info(f"Input Audio Detected::{response}")
                                 await clear_buffer(websocket, openai_ws, stream_sid)
 
-                            # Handle new user messages
                             if response.get("type") == "conversation.item.create":
                                 item = response.get("item", {})
-                                if item.get("type") == "message" and item.get("role") == "user":
-                                    user_text_parts = [c["text"] for c in item["content"] if c["type"] == "text"]
-                                    user_text = " ".join(user_text_parts)
-                                    conversation_histories[session_id].append({"role": "user", "content": user_text})
+                                if item.get("type") == "message":
+                                    if item.get("role") == "user":
+                                        # Handle user message as before
+                                        user_text_parts = [c["text"] for c in item["content"] if c["type"] == "text"]
+                                        user_text = " ".join(user_text_parts)
+                                        conversation_histories[session_id].append({"role": "user", "content": user_text})
+
+                                    elif item.get("role") == "assistant":
+                                        # Handle assistant message
+                                        # The assistant's response is often in 'transcript' fields in audio content
+                                        assistant_text_parts = [c["transcript"] for c in item["content"] if c.get("type") == "audio" and "transcript" in c]
+                                        assistant_text = " ".join(assistant_text_parts)
+                                        conversation_histories[session_id].append({"role": "assistant", "content": assistant_text})
 
                             if response[
                                 "type"
