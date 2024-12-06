@@ -286,7 +286,8 @@ async def handle_media_stream(
                         try:
                             response = json.loads(openai_message)
                             start_time = time.time()
-                            if response["type"] in LOG_EVENT_TYPES:
+                            # if response["type"] in LOG_EVENT_TYPES:
+                            if response["type"]:
                                 logger.info(
                                     f"Received event: {response['type']}::{response}"
                                 )
