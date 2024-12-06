@@ -296,6 +296,26 @@ async def handle_media_stream(
                                 logger.info(f"Input Audio Detected::{response}")
                                 await clear_buffer(websocket, openai_ws, stream_sid)
 
+                            if response.get("type") == "conversation.item.create":
+                                item = response.get("item", {})
+                                if item.get("type") == "message":
+                                    if session_id not in conversation_histories:
+                                        conversation_histories[session_id] = []
+                                    if item.get("role") == "user":
+                                        # Handle user message as before
+                                        user_text_parts = [c["text"] for c in item["content"] if c["type"] == "text"]
+                                        user_text = " ".join(user_text_parts)
+                                        conversation_histories[session_id].append({"role": "user", "content": user_text})
+                                        print("Adding user query into conversation history from conversation.item.create")
+                                        
+                                    elif item.get("role") == "assistant":
+                                        # Handle assistant message
+                                        # The assistant's response is often in 'transcript' fields in audio content
+                                        assistant_text_parts = [c["transcript"] for c in item["content"] if c.get("type") == "audio" and "transcript" in c]
+                                        assistant_text = " ".join(assistant_text_parts)
+                                        conversation_histories[session_id].append({"role": "assistant", "content": assistant_text})
+                                        print("Adding response into conversation history from conversation.item.create")
+
                             if response[
                                 "type"
                             ] == "response.audio.delta" and response.get("delta"):
@@ -326,15 +346,20 @@ async def handle_media_stream(
                                     arguments = json.loads(response["arguments"])
                                     if function_name == "get_additional_context":
                                         await play_typing(websocket, stream_sid)
-                                        logger.info("CustomGPT Started")
+                                        logger.info("Query to KB Started")
                                         start_time = time.time()
+                                        
                                         # Store the user's query
+                                        if session_id not in conversation_histories:
+                                            conversation_histories[session_id] = []
                                         conversation_histories[session_id].append(
                                             {
                                                 "role": "user",
                                                 "content": arguments["query"],
                                             }
                                         )
+                                        print("Adding user query into conversation history when calling RAG")
+                                        
                                         result = get_additional_context(
                                             arguments["query"], api_key, session_id
                                         )
@@ -482,9 +507,10 @@ def get_additional_context(query, api_key, session_id):
             conversation_histories[session_id].append(
                 {"role": "assistant", "content": assistant_response}
             )
+            print("Adding response into conversation history when calling RAG")
 
             return assistant_response
-            # TODO: Ensure that this assistantresponse is the same as the one from CustomGPT
+            
         except Exception as e:
             logger.error(f"Get Additional Context failed::Try {tries}::Error: {str(e)}")
             time.sleep(2)  # Wait before retrying
@@ -539,7 +565,7 @@ async def send_session_update(openai_ws, phone_number, introduction):
                         "properties": {
                             "query": {
                                 "type": "string",
-                                "description": "The elaborated user query. This should fully describe the user's original question, adding depth, context, and clarity. Tailor the expanded query as if the user were asking an expert in the relevant field, providing necessary background or related subtopics that may help inform the response. Start with 'Please use your knowledge base'",
+                                "description": "The elaborated user query. This should fully include and describe the user's original question, adding depth, context, and clarity. Tailor the expanded query as if the user were asking an expert in the relevant field, providing necessary background or related subtopics that may help inform the response. Start with 'Please use your knowledge base'",
                             }
                         },
                         "required": ["query"],
