@@ -26,11 +26,14 @@ def main():
     display_chat_history()
     handle_user_input()
 
+    left_button, right_button = st.columns(2)
     # Render the circle with a button
-    help_button()
+    with left_button:
+        help_button()
 
     # Button for clearing conversatin history
-    clear_conversation_history_button()
+    with right_button:
+        clear_conversation_history_button()
 
 
 def initialise_chatbot():
@@ -91,7 +94,7 @@ def generate_assistant_response(user_input):
 # Function to display the circle with a button
 def help_button(ready=False):
     # Define a unique key for the button
-    if st.button("Talk to AIDoc", key="circle_button", icon="🚨"):
+    if st.button("Talk to AIDoc", icon="🚨", use_container_width=True):
         st.write("Circle button clicked!")
     print("Alert button pressed.")
 
@@ -112,7 +115,7 @@ def connect_to_aidoc():
 
 def clear_conversation_history_button():
     # Clear chat history
-    if st.button("Clear History"):
+    if st.button("Clear History", icon="🗑️", use_container_width=True):
         st.session_state.messages = []
 
 
