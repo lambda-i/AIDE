@@ -316,14 +316,26 @@ async def handle_media_stream(
                             #             conversation_histories[session_id].append({"role": "assistant", "content": assistant_text})
                             #             print("Adding response into conversation history from conversation.item.create")
                             if response.get("type") == "response.done":
-                                if response['response']['output'][0]['role'] == 'assistant':
-                                    if session_id not in conversation_histories:
-                                        conversation_histories[session_id] = []
-                                    assistant_text = response['response']['output'][0]['content'][0]['transcript']
-                                    print(assistant_text)
-                                if response['response']['output'][0]['content'][0]['transcript']:
-                                    conversation_histories[session_id].append({"role": "assistant", "content": assistant_text})
-                                    print("Adding response into conversation history from response.done")
+                                output_items = response['response'].get('output', [])
+                            
+                                if output_items:
+                                    for item in output_items:
+                                        content = item.get('content', [])
+                                        
+                                        if content:
+                                            for content_item in content:
+                                                assistant_text = content_item.get('transcript', None)
+                            
+                                                # Check if 'role' exists (it's only in 'message' types)
+                                                role = item.get('role', None)
+                            
+                                                # Only process items with a role ('assistant' or 'user') or handle function calls
+                                                if role == 'assistant':
+                                                    if assistant_text:
+                                                        if session_id not in conversation_histories:
+                                                            conversation_histories[session_id] = []
+                                                        conversation_histories[session_id].append({"role": role if role else "unknown", "content": assistant_text})
+                                                        print("Adding response into conversation history from response.done")
 
                             if response[
                                 "type"
