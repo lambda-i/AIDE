@@ -35,4 +35,3 @@ openai
 qdrant_client
 pymupdf4llm
 fpdf
-streamlit-modal
