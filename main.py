@@ -286,35 +286,43 @@ async def handle_media_stream(
                         try:
                             response = json.loads(openai_message)
                             start_time = time.time()
-                            # if response["type"] in LOG_EVENT_TYPES:
-                            logger.info(
-                                f"Received event: {response['type']}::{response}"
-                            )
+                            if response["type"] in LOG_EVENT_TYPES:
+                                logger.info(
+                                    f"Received event: {response['type']}::{response}"
+                                )
                             if response["type"] == "session.updated":
                                 logger.info(f"Session updated successfully: {response}")
                             if response["type"] == "input_audio_buffer.speech_started":
                                 logger.info(f"Input Audio Detected::{response}")
                                 await clear_buffer(websocket, openai_ws, stream_sid)
 
-                            if response.get("type") == "conversation.item.create":
-                                item = response.get("item", {})
-                                if item.get("type") == "message":
+                            # if response.get("type") == "response.done":
+                            #     item = response.get("item", {})
+                            #     if item.get("type") == "message":
+                            #         if session_id not in conversation_histories:
+                            #             conversation_histories[session_id] = []
+                            #         if item.get("role") == "user":
+                            #             # Handle user message as before
+                            #             user_text_parts = [c["text"] for c in item["content"] if c["type"] == "text"]
+                            #             user_text = " ".join(user_text_parts)
+                            #             conversation_histories[session_id].append({"role": "user", "content": user_text})
+                            #             print("Adding user query into conversation history from conversation.item.create")
+                                        
+                            #         if item.get("role") == "assistant":
+                            #             # Handle assistant message
+                            #             # The assistant's response is often in 'transcript' fields in audio content
+                            #             assistant_text_parts = [c["transcript"] for c in item["content"] if c.get("type") == "audio" and "transcript" in c]
+                            #             assistant_text = " ".join(assistant_text_parts)
+                            #             conversation_histories[session_id].append({"role": "assistant", "content": assistant_text})
+                            #             print("Adding response into conversation history from conversation.item.create")
+                            if response.get("type") == "response.done":
+                                if response['response']['output'][0]['role'] == 'assistant':
                                     if session_id not in conversation_histories:
                                         conversation_histories[session_id] = []
-                                    if item.get("role") == "user":
-                                        # Handle user message as before
-                                        user_text_parts = [c["text"] for c in item["content"] if c["type"] == "text"]
-                                        user_text = " ".join(user_text_parts)
-                                        conversation_histories[session_id].append({"role": "user", "content": user_text})
-                                        print("Adding user query into conversation history from conversation.item.create")
-                                        
-                                    elif item.get("role") == "assistant":
-                                        # Handle assistant message
-                                        # The assistant's response is often in 'transcript' fields in audio content
-                                        assistant_text_parts = [c["transcript"] for c in item["content"] if c.get("type") == "audio" and "transcript" in c]
-                                        assistant_text = " ".join(assistant_text_parts)
-                                        conversation_histories[session_id].append({"role": "assistant", "content": assistant_text})
-                                        print("Adding response into conversation history from conversation.item.create")
+                                    assistant_text = response['response']['output'][0]['content'][0]['transcript']
+                                if ['response']['output'][0]['content'][0]['transcript']
+                                    conversation_histories[session_id].append({"role": "assistant", "content": assistant_text})
+                                    print("Adding response into conversation history from response.done")
 
                             if response[
                                 "type"
