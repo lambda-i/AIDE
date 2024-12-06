@@ -296,25 +296,6 @@ async def handle_media_stream(
                                 logger.info(f"Input Audio Detected::{response}")
                                 await clear_buffer(websocket, openai_ws, stream_sid)
 
-                            # if response.get("type") == "response.done":
-                            #     item = response.get("item", {})
-                            #     if item.get("type") == "message":
-                            #         if session_id not in conversation_histories:
-                            #             conversation_histories[session_id] = []
-                            #         if item.get("role") == "user":
-                            #             # Handle user message as before
-                            #             user_text_parts = [c["text"] for c in item["content"] if c["type"] == "text"]
-                            #             user_text = " ".join(user_text_parts)
-                            #             conversation_histories[session_id].append({"role": "user", "content": user_text})
-                            #             print("Adding user query into conversation history from conversation.item.create")
-                                        
-                            #         if item.get("role") == "assistant":
-                            #             # Handle assistant message
-                            #             # The assistant's response is often in 'transcript' fields in audio content
-                            #             assistant_text_parts = [c["transcript"] for c in item["content"] if c.get("type") == "audio" and "transcript" in c]
-                            #             assistant_text = " ".join(assistant_text_parts)
-                            #             conversation_histories[session_id].append({"role": "assistant", "content": assistant_text})
-                            #             print("Adding response into conversation history from conversation.item.create")
                             if response.get("type") == "response.done":
                                 output_items = response['response'].get('output', [])
                             
@@ -525,10 +506,10 @@ def get_additional_context(query, api_key, session_id):
             assistant_response = response.choices[0].message.content.strip()
 
             # Upload KB fetching summaries to history
-            conversation_histories[session_id].append(
-                {"role": "assistant", "content": assistant_response}
-            )
-            print("Adding response into conversation history when calling RAG")
+            # conversation_histories[session_id].append(
+            #     {"role": "assistant", "content": assistant_response}
+            # )
+            # print("Adding response into conversation history when calling RAG")
 
             return assistant_response
             
