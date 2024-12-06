@@ -1,6 +1,9 @@
 from fpdf import FPDF
 import json
 import re  # Import regex module
+import os
+
+LOGO_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "lambdai.png"))
 
 class MedicalPDF(FPDF):
     def __init__(self, logo_path):
@@ -72,10 +75,8 @@ def create_medical_pdf(json_data, logo_path, file_name="conversation_summary_med
     pdf.output(file_name)
     return file_name
 
-logo_path = "./lambdai.png"  # Replace with your actual logo file path
-
 with open('./test.json', 'r') as json_file:
     json_data = json.load(json_file)  # Parse the JSON file into a Python dictionary
 
-file_path = create_medical_pdf(json_data, logo_path)
-print(f"Formatted PDF saved at: {file_path}")
+file_name = create_medical_pdf(json_data, LOGO_PATH)
+print(f"Formatted PDF saved at: {file_name}")
