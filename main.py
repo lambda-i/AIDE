@@ -114,6 +114,7 @@ async def handle_incoming_call(
     phone_number: Optional[str] = None,
     introduction: Optional[str] = DEFAULT_INTRO,
 ):
+    global CURR_SESSION_ID
     logger.info(f"Introduction: {introduction}")
     form_data = (
         await request.form() if request.method == "POST" else request.query_params
