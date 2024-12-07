@@ -255,7 +255,7 @@ async def handle_media_stream(
                         logger.info(
                             f"Twilio WebSocket disconnected. Session ID: {session_id}"
                         )
-                        await asyncio.sleep(5)
+                        await asyncio.sleep(2)
                         await generate_conversation_summary(session_id)
                         # await get_conversation_summary(session_id)
                         summary = await get_conversation_summary(session_id)
