@@ -19,7 +19,8 @@ def split_text_into_chunks(text, max_tokens=1024):
 
 pdf_paths = ['./src/utils/knowledge_base/one.pdf', './src/utils/knowledge_base/two.pdf', './src/utils/knowledge_base/three.pdf', 
              './src/utils/knowledge_base/four.pdf', './src/utils/knowledge_base/five.pdf', './src/utils/knowledge_base/six.pdf',
-             './src/utils/knowledge_base/seven.pdf', './src/utils/knowledge_base/eight.pdf', './src/utils/knowledge_base/nine.pdf', 
+             './src/utils/knowledge_base/seven.pdf', './src/utils/knowledge_base/eight.pdf', './src/utils/knowledge_base/nine.pdf',
+             './src/utils/knowledge_base/ten.pdf', './src/utils/knowledge_base/eleven.pdf'
              ]
 
 for pdf_path in pdf_paths:

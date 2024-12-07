@@ -34,7 +34,7 @@ vectordb_client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
 
 # END POINTS
 CALL_STATUS_ENDPOINT = (
-    "http://example.com/call-status"  # Dummy endpoint for call status
+    "https://aide-app-8fddbaafae53.herokuapp.com/api/get-session-id"  # Dummy endpoint for call status
 )
 SUMMARY_ENDPOINT = "http://example.com/summary"  # Dummy endpoint for summary generation
 
@@ -141,16 +141,10 @@ def call_assistance_dialog():
     # Display the predefined phone number
     st.success(f"Call the number from your phone: {PERSONAL_PHONE_NUMBER}")
 
-    call_status = get_call_status()
-
-    # Poll until the call ends
-    if call_status != "ended":
-
-        st.success("Call ended. Generating summary now...")
-
-        # Wait for the summary and generate the PDF
-        summary_data = wait_for_summary()
-        st.write(summary_data)  ## remove later
+    if st.button("JUNWEI Call ended? Generate call summary here!"):
+        summary_data = generate_summary()
+        if summary_data:
+            st.write(summary_data)  ## remove later
 
         file_name = create_medical_pdf(summary_data, LOGO_PATH)
         print(file_name)
@@ -176,6 +170,45 @@ def call_assistance_dialog():
                 """,
                 unsafe_allow_html=True,
             )
+
+
+    ####
+
+    # call_status = get_call_status()
+
+    # # Poll until the call ends
+    # if call_status != "ended":
+
+    #     st.success("Call ended. Generating summary now...")
+
+    #     # Wait for the summary and generate the PDF
+    #     summary_data = wait_for_summary()
+    #     st.write(summary_data)  ## remove later
+
+    #     file_name = create_medical_pdf(summary_data, LOGO_PATH)
+    #     print(file_name)
+
+    #     # Embed the PDF as a viewer
+    #     with open(f"./{file_name}", "rb") as pdf_file:
+
+    #         pdf_data = pdf_file.read()
+
+    #         # Create a temporary file path for the PDF viewer
+    #         temp_file_path = f"temp_{int(time.time())}.pdf"
+    #         with open(temp_file_path, "wb") as temp_file:
+    #             temp_file.write(pdf_data)
+
+    #         # Embed the PDF viewer using HTML and iframe
+    #         st.markdown(
+    #             f"""
+    #             <iframe src="data:application/pdf;base64,{base64.b64encode(pdf_data).decode('utf-8')}" 
+    #                     width="700" 
+    #                     height="500" 
+    #                     type="application/pdf">
+    #             </iframe>
+    #             """,
+    #             unsafe_allow_html=True,
+    #         )
 
         # st.success("PDF generated successfully!")
 
@@ -236,27 +269,45 @@ def add_timestamp(message):
     formatted_datetime = current_datetime.strftime("%-d-%b-%y %H:%M")
     return f"[{formatted_datetime}]\n\n{message}"
 
+# def render_pdf(pdf_path):
+#     """Render a PDF file in Streamlit without sidebar and set zoom to 90%."""
+#     with open(pdf_path, "rb") as f:
+#         base64_pdf = base64.b64encode(f.read()).decode("utf-8")
 
-import base64
-import streamlit as st
+#     # Add parameters to hide toolbar, navigation panes, and set zoom
+#     pdf_display = f"""
+#         <iframe 
+#             src="data:application/pdf;base64,{base64_pdf}#toolbar=0&navpanes=0&zoom=90" 
+#             width="100%" 
+#             height="800" 
+#             type="application/pdf">
+#         </iframe>
+#     """
+#     st.markdown(pdf_display, unsafe_allow_html=True)
 
+def generate_summary():
+    try:
+        # Step 1: Fetch the session ID
+        session_response = requests.post("https://aide-app-8fddbaafae53.herokuapp.com/api/get-session-id")
+        if session_response.status_code == 200:
+            session_id = session_response.json().get("sessionId")
+            
+            if not session_id:
+                st.error("Session ID could not be retrieved.")
+                return None
 
-def render_pdf(pdf_path):
-    """Render a PDF file in Streamlit without sidebar and set zoom to 90%."""
-    with open(pdf_path, "rb") as f:
-        base64_pdf = base64.b64encode(f.read()).decode("utf-8")
+            # Step 2: Use the session ID to fetch the conversation summary
+            summary_response = requests.get(f"https://aide-app-8fddbaafae53.herokuapp.com/conversation-summary/{session_id}")
+            if summary_response.status_code == 200:
+                return summary_response.json()  # Return the JSON summary
 
-    # Add parameters to hide toolbar, navigation panes, and set zoom
-    pdf_display = f"""
-        <iframe 
-            src="data:application/pdf;base64,{base64_pdf}#toolbar=0&navpanes=0&zoom=90" 
-            width="100%" 
-            height="800" 
-            type="application/pdf">
-        </iframe>
-    """
-    st.markdown(pdf_display, unsafe_allow_html=True)
-
+            st.error("Failed to retrieve conversation summary.")
+        else:
+            st.error("Failed to generate session ID.")
+    except requests.exceptions.RequestException as e:
+        st.error(f"Error checking summary status: {str(e)}")
+    
+    return None
 
 if __name__ == "__main__":
     main()
