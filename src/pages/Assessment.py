@@ -31,9 +31,7 @@ client.api_key = OPENAI_API_KEY
 vectordb_client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
 
 # END POINTS
-CALL_STATUS_ENDPOINT = (
-    "https://aide-app-8fddbaafae53.herokuapp.com/api/get-session-id"  # Dummy endpoint for call status
-)
+CALL_STATUS_ENDPOINT = "https://aide-app-8fddbaafae53.herokuapp.com/api/get-session-id"  # Dummy endpoint for call status
 SUMMARY_ENDPOINT = "http://example.com/summary"  # Dummy endpoint for summary generation
 
 
@@ -139,8 +137,43 @@ def call_assistance_dialog():
     # Display the predefined phone number
     st.success(f"Call the number from your phone: {PERSONAL_PHONE_NUMBER}")
 
-    if st.button("JUNWEI Call ended? Generate call summary here!"):
-        summary_data = generate_summary()
+    if st.button(
+        "Call ended? View & Download Call Summary Here!",
+        icon="⬇️",
+        use_container_width=True,
+    ):
+        # summary_data = generate_summary()
+        summary_data = {
+            "summary": "1. **Main Topics Discussed:**\n   - Management of cough, fever, and headache.\n   - Guidance on responding to chest pain.\n   - Urgent actions to take when vomiting blood.\n\n2. **Key Questions Asked:**\n   - What should be done for symptoms of cough, fever, and headache?\n   - How to respond to chest pain and when to seek urgent medical attention?\n   - What immediate actions should be taken after vomiting blood?\n\n3. **Important Information Provided:**\n   - For cough, fever, and headache: Stay hydrated, rest, and consider over-the-counter medications. Seek medical care if fever exceeds 39°C, symptoms worsen, or there are severe symptoms such as difficulty breathing.\n   - For chest pain: Assess pain severity; seek immediate medical attention if severe or accompanied by other serious symptoms (e.g., shortness of breath, sweating). For less severe pain, rest and consult a healthcare professional.\n   - For vomiting blood: This is a serious condition requiring prompt medical attention, suggesting a possible life-threatening condition. Immediate action includes contacting emergency services and avoiding food or drink until evaluated.",
+            "timestamp": "2024-12-05T22: 27: 56.510682",
+            "caller_number": "Unknown",
+            "full_conversation": [
+                {
+                    "role": "user",
+                    "content": "A user asked: 'I currently have a cough, fever, and headache. What should I do?' Please provide detailed advice on managing these symptoms, potential causes, and when it would be necessary to seek medical attention.",
+                },
+                {
+                    "role": "assistant",
+                    "content": "To manage your symptoms of cough, fever, and headache, ensure you stay hydrated, rest, and consider taking over-the-counter medications such as acetaminophen or ibuprofen for fever and pain relief. Potential causes for these symptoms include viral infections like the flu or colds, bacterial infections, or even sinusitis. Seek medical attention if your fever exceeds 39°C (102°F), symptoms worsen, if you experience severe headache or persistent cough, or if you have difficulty breathing.",
+                },
+                {
+                    "role": "user",
+                    "content": "A user asked: 'I currently have chest pain as well. Is there anything I should do?' Please provide guidance on how to respond to chest pain, including when it is urgent to seek medical attention.",
+                },
+                {
+                    "role": "assistant",
+                    "content": "If you are experiencing chest pain, it's crucial to assess its severity and associated symptoms. Seek immediate medical attention if the pain is severe, lasts more than a few minutes, is accompanied by shortness of breath, sweating, nausea, or radiates to the arm or jaw, as these could indicate a heart attack. For less severe pain, consider resting, taking deep breaths, and avoiding strenuous activities, but speaking to a healthcare professional is still advisable to determine the cause.",
+                },
+                {
+                    "role": "user",
+                    "content": "A user asked: 'I just vomited blood. What should I do?' Please provide urgent advice on the implications of vomiting blood and the immediate actions to take, including when to seek emergency medical help.",
+                },
+                {
+                    "role": "assistant",
+                    "content": "Vomiting blood is a serious condition that requires immediate medical attention. You should call emergency services or go to the nearest hospital right away, as it can indicate bleeding in the gastrointestinal tract, which could be life-threatening. While waiting for help, try to remain calm and avoid eating or drinking anything until evaluated by a healthcare professional to prevent further complications.",
+                },
+            ],
+        }
         if summary_data:
             st.write(summary_data)  ## remove later
 
@@ -168,61 +201,6 @@ def call_assistance_dialog():
                 """,
                 unsafe_allow_html=True,
             )
-
-
-    ####
-
-    # call_status = get_call_status()
-
-    # # Poll until the call ends
-    # if call_status != "ended":
-
-    #     st.success("Call ended. Generating summary now...")
-
-    #     # Wait for the summary and generate the PDF
-    #     summary_data = wait_for_summary()
-    #     st.write(summary_data)  ## remove later
-
-    #     file_name = create_medical_pdf(summary_data, LOGO_PATH)
-    #     print(file_name)
-
-    #     # Embed the PDF as a viewer
-    #     with open(f"./{file_name}", "rb") as pdf_file:
-
-    #         pdf_data = pdf_file.read()
-
-    #         # Create a temporary file path for the PDF viewer
-    #         temp_file_path = f"temp_{int(time.time())}.pdf"
-    #         with open(temp_file_path, "wb") as temp_file:
-    #             temp_file.write(pdf_data)
-
-    #         # Embed the PDF viewer using HTML and iframe
-    #         st.markdown(
-    #             f"""
-    #             <iframe src="data:application/pdf;base64,{base64.b64encode(pdf_data).decode('utf-8')}" 
-    #                     width="700" 
-    #                     height="500" 
-    #                     type="application/pdf">
-    #             </iframe>
-    #             """,
-    #             unsafe_allow_html=True,
-    #         )
-
-        # st.success("PDF generated successfully!")
-
-        # # Display the PDF in the frontend (as an embedded object)
-        # with open(file_path, "rb") as pdf_file:
-        #     pdf_data = "conversation_summary_medical.pdf".read()
-        #     print(pdf_data)
-
-        #     # Embed the PDF
-        #     st.write("### Generated PDF Preview:")
-        #     st.download_button(
-        #         label="📄 Download Summary",
-        #         data=pdf_data,
-        #         file_name="conversation_summary_medical.pdf",
-        #         mime="application/pdf",
-        #     )
 
 
 # Function to simulate polling the call status endpoint
@@ -267,35 +245,24 @@ def add_timestamp(message):
     formatted_datetime = current_datetime.strftime("%-d-%b-%y %H:%M")
     return f"[{formatted_datetime}]\n\n{message}"
 
-# def render_pdf(pdf_path):
-#     """Render a PDF file in Streamlit without sidebar and set zoom to 90%."""
-#     with open(pdf_path, "rb") as f:
-#         base64_pdf = base64.b64encode(f.read()).decode("utf-8")
-
-#     # Add parameters to hide toolbar, navigation panes, and set zoom
-#     pdf_display = f"""
-#         <iframe 
-#             src="data:application/pdf;base64,{base64_pdf}#toolbar=0&navpanes=0&zoom=90" 
-#             width="100%" 
-#             height="800" 
-#             type="application/pdf">
-#         </iframe>
-#     """
-#     st.markdown(pdf_display, unsafe_allow_html=True)
 
 def generate_summary():
     try:
         # Step 1: Fetch the session ID
-        session_response = requests.post("https://aide-app-8fddbaafae53.herokuapp.com/api/get-session-id")
+        session_response = requests.post(
+            "https://aide-app-8fddbaafae53.herokuapp.com/api/get-session-id"
+        )
         if session_response.status_code == 200:
             session_id = session_response.json().get("sessionId")
-            
+
             if not session_id:
                 st.error("Session ID could not be retrieved.")
                 return None
 
             # Step 2: Use the session ID to fetch the conversation summary
-            summary_response = requests.get(f"https://aide-app-8fddbaafae53.herokuapp.com/conversation-summary/{session_id}")
+            summary_response = requests.get(
+                f"https://aide-app-8fddbaafae53.herokuapp.com/conversation-summary/{session_id}"
+            )
             if summary_response.status_code == 200:
                 return summary_response.json()  # Return the JSON summary
 
@@ -304,8 +271,9 @@ def generate_summary():
             st.error("Failed to generate session ID.")
     except requests.exceptions.RequestException as e:
         st.error(f"Error checking summary status: {str(e)}")
-    
+
     return None
+
 
 if __name__ == "__main__":
     main()
