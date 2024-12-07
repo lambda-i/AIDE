@@ -1,6 +1,4 @@
 import streamlit as st
-import websockets
-import asyncio
 import json
 from datetime import datetime
 import requests
@@ -235,10 +233,6 @@ def add_timestamp(message):
     current_datetime = datetime.now()
     formatted_datetime = current_datetime.strftime("%-d-%b-%y %H:%M")
     return f"[{formatted_datetime}]\n\n{message}"
-
-
-import base64
-import streamlit as st
 
 
 def render_pdf(pdf_path):
