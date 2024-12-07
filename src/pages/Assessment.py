@@ -7,10 +7,7 @@ from dotenv import load_dotenv
 from openai import OpenAI
 from qdrant_client import QdrantClient
 from datetime import datetime
-import time
-from utils.pdf_generate import create_medical_pdf
 from pathlib import Path
-import base64
 
 load_dotenv()
 
@@ -138,69 +135,19 @@ def call_assistance_dialog():
     st.success(f"Call the number from your phone: {PERSONAL_PHONE_NUMBER}")
 
     if st.button(
-        "Call ended? View & Download Call Summary Here!",
+        "Call ended? View Call Summary Here!",
         icon="⬇️",
         use_container_width=True,
     ):
-        # summary_data = generate_summary()
-        summary_data = {
-            "summary": "1. **Main Topics Discussed:**\n   - Management of cough, fever, and headache.\n   - Guidance on responding to chest pain.\n   - Urgent actions to take when vomiting blood.\n\n2. **Key Questions Asked:**\n   - What should be done for symptoms of cough, fever, and headache?\n   - How to respond to chest pain and when to seek urgent medical attention?\n   - What immediate actions should be taken after vomiting blood?\n\n3. **Important Information Provided:**\n   - For cough, fever, and headache: Stay hydrated, rest, and consider over-the-counter medications. Seek medical care if fever exceeds 39°C, symptoms worsen, or there are severe symptoms such as difficulty breathing.\n   - For chest pain: Assess pain severity; seek immediate medical attention if severe or accompanied by other serious symptoms (e.g., shortness of breath, sweating). For less severe pain, rest and consult a healthcare professional.\n   - For vomiting blood: This is a serious condition requiring prompt medical attention, suggesting a possible life-threatening condition. Immediate action includes contacting emergency services and avoiding food or drink until evaluated.",
-            "timestamp": "2024-12-05T22: 27: 56.510682",
-            "caller_number": "Unknown",
-            "full_conversation": [
-                {
-                    "role": "user",
-                    "content": "A user asked: 'I currently have a cough, fever, and headache. What should I do?' Please provide detailed advice on managing these symptoms, potential causes, and when it would be necessary to seek medical attention.",
-                },
-                {
-                    "role": "assistant",
-                    "content": "To manage your symptoms of cough, fever, and headache, ensure you stay hydrated, rest, and consider taking over-the-counter medications such as acetaminophen or ibuprofen for fever and pain relief. Potential causes for these symptoms include viral infections like the flu or colds, bacterial infections, or even sinusitis. Seek medical attention if your fever exceeds 39°C (102°F), symptoms worsen, if you experience severe headache or persistent cough, or if you have difficulty breathing.",
-                },
-                {
-                    "role": "user",
-                    "content": "A user asked: 'I currently have chest pain as well. Is there anything I should do?' Please provide guidance on how to respond to chest pain, including when it is urgent to seek medical attention.",
-                },
-                {
-                    "role": "assistant",
-                    "content": "If you are experiencing chest pain, it's crucial to assess its severity and associated symptoms. Seek immediate medical attention if the pain is severe, lasts more than a few minutes, is accompanied by shortness of breath, sweating, nausea, or radiates to the arm or jaw, as these could indicate a heart attack. For less severe pain, consider resting, taking deep breaths, and avoiding strenuous activities, but speaking to a healthcare professional is still advisable to determine the cause.",
-                },
-                {
-                    "role": "user",
-                    "content": "A user asked: 'I just vomited blood. What should I do?' Please provide urgent advice on the implications of vomiting blood and the immediate actions to take, including when to seek emergency medical help.",
-                },
-                {
-                    "role": "assistant",
-                    "content": "Vomiting blood is a serious condition that requires immediate medical attention. You should call emergency services or go to the nearest hospital right away, as it can indicate bleeding in the gastrointestinal tract, which could be life-threatening. While waiting for help, try to remain calm and avoid eating or drinking anything until evaluated by a healthcare professional to prevent further complications.",
-                },
-            ],
-        }
+        summary_data = generate_summary()
         if summary_data:
-            st.write(summary_data)  ## remove later
-
-        file_name = create_medical_pdf(summary_data, LOGO_PATH)
-        print(file_name)
-
-        # Embed the PDF as a viewer
-        with open(f"./{file_name}", "rb") as pdf_file:
-
-            pdf_data = pdf_file.read()
-
-            # Create a temporary file path for the PDF viewer
-            temp_file_path = f"temp_{int(time.time())}.pdf"
-            with open(temp_file_path, "wb") as temp_file:
-                temp_file.write(pdf_data)
-
-            # Embed the PDF viewer using HTML and iframe
-            st.markdown(
-                f"""
-                <iframe src="data:application/pdf;base64,{base64.b64encode(pdf_data).decode('utf-8')}" 
-                        width="700" 
-                        height="500" 
-                        type="application/pdf">
-                </iframe>
-                """,
-                unsafe_allow_html=True,
-            )
+            if "call_summary" not in st.session_state:
+                st.session_state["call_summary"] = ""
+            st.session_state.call_summary = summary_data
+            st.session_state.curr_page = "pdfviewer"
+            st.rerun()
+        else:
+            st.error("Unable to Generate Call Summary.")
 
 
 # Function to simulate polling the call status endpoint
@@ -212,27 +159,6 @@ def get_call_status():
     except requests.exceptions.RequestException as e:
         st.error(f"Error checking call status: {str(e)}")
     return "in_progress"
-
-
-# Function to wait for summary generation
-def wait_for_summary():
-    st.write("Waiting for the summary to be ready...")
-    root_dir = Path(__file__).resolve().parents[2]
-    test_json_path = root_dir / "test.json"
-
-    while True:
-        try:
-            response = requests.get(SUMMARY_ENDPOINT)
-            if response.status_code == 404:  # For testing purposes
-                # Load test JSON file
-                with open(test_json_path, "r") as f:
-                    test_data = json.load(f)
-                return test_data
-            elif response.status_code == 200:  # When endpoint is ready
-                return response.json()
-        except requests.exceptions.RequestException as e:
-            st.error(f"Error checking summary status: {str(e)}")
-        time.sleep(2)  # Polling interval
 
 
 def clear_conversation_history_button():

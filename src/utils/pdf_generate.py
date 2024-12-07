@@ -59,9 +59,7 @@ def extract_text_in_quotes(content):
     return content.strip()  # Return the original text if no match
 
 
-def create_medical_pdf(
-    json_data, logo_path, file_name="conversation_summary_medical.pdf"
-):
+def create_medical_pdf(json_data, logo_path):
     pdf = MedicalPDF(logo_path)
     pdf.add_page()
 
@@ -91,14 +89,5 @@ def create_medical_pdf(
         pdf.multi_cell(0, 10, content)
         pdf.ln(2)
 
-    # Save the PDF
-    return pdf
-    pdf.output(file_name)
-    return file_name
-
-
-with open("./test.json", "r") as json_file:
-    json_data = json.load(json_file)  # Parse the JSON file into a Python dictionary
-
-file_name = create_medical_pdf(json_data, LOGO_PATH)
-print(f"Formatted PDF saved at: {file_name}")
+    pdf_bytes = pdf.output(dest="S").encode("latin1")
+    return pdf_bytes

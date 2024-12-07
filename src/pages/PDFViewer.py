@@ -1,6 +1,10 @@
 import streamlit as st
 import base64
+from src.utils import generate_pdf_from_json
 from pathlib import Path
+
+ROOT_DIR = Path(__file__).resolve().parents[2]
+LOGO_PATH = str(ROOT_DIR / "src" / "utils" / "lambdai.png")
 
 
 def main():
@@ -34,7 +38,7 @@ def main():
     with right_button:
         back_chat_button()
 
-    render_fullscreen_pdf("./conversation_summary_medical.pdf")
+    render_fullscreen_pdf()
 
 
 # Define back home button
@@ -51,101 +55,21 @@ def back_chat_button():
         st.rerun()
 
 
-def render_fullscreen_pdf(pdf_path: str, height_percentage: int = 100) -> None:
-    """
-    Render a PDF file in Streamlit that takes up the entire viewport.
+def render_fullscreen_pdf() -> None:
+    summary_data = st.session_state.call_summary
+    pdf_bytes = generate_pdf_from_json(summary_data, LOGO_PATH)
+    b64_pdf = base64.b64encode(pdf_bytes).decode("utf-8")
 
-    Args:
-        pdf_path: Path to the PDF file
-        height_percentage: Percentage of viewport height to use (default: 100)
-    """
-    # Validate PDF path
-    if not Path(pdf_path).is_file():
-        st.error(f"PDF file not found: {pdf_path}")
-        return
-
-    # Hide Streamlit's default elements
-    hide_streamlit_style = """
-        <style>
-            #MainMenu {visibility: hidden;}
-            header {visibility: hidden;}
-            footer {visibility: hidden;}
-            .block-container {
-                padding-top: 0;
-                padding-bottom: 10;
-                padding-left: 5;
-                padding-right: 5;
-            }
-            .stApp {
-                margin: 0;
-                padding: 0;
-            }
-            iframe {
-                border: none !important;
-            }
-            /* Custom scrollbar styles */
-            ::-webkit-scrollbar {
-                width: 10px;
-                height: 10px;
-            }
-            ::-webkit-scrollbar-track {
-                background: #f1f1f1;
-            }
-            ::-webkit-scrollbar-thumb {
-                background: #888;
-                border-radius: 5px;
-            }
-            ::-webkit-scrollbar-thumb:hover {
-                background: #555;
-            }
-        </style>
-    """
-    st.markdown(hide_streamlit_style, unsafe_allow_html=True)
-
-    try:
-        # Read and encode PDF
-        with open(pdf_path, "rb") as f:
-            base64_pdf = base64.b64encode(f.read()).decode("utf-8")
-
-        # Calculate viewport height in pixels
-        # Use JavaScript to get actual viewport height
-        js_height = """
-            <script>
-                window.addEventListener('load', function() {
-                    // Get viewport height
-                    var vh = window.innerHeight;
-                    // Update iframe height
-                    var iframe = document.querySelector('iframe');
-                    iframe.style.height = vh + 'px';
-                });
-                // Handle resize events
-                window.addEventListener('resize', function() {
-                    var vh = window.innerHeight;
-                    var iframe = document.querySelector('iframe');
-                    iframe.style.height = vh + 'px';
-                });
-            </script>
+    # Display PDF in Streamlit
+    pdf_display = f"""
+        <iframe src="data:application/pdf;base64,{b64_pdf}" 
+                width="100%"
+                style="height: 100vh;"
+                type="application/pdf"
+                frameborder="0"
+        </iframe>
         """
-
-        # Create PDF viewer with additional parameters for better viewing
-        pdf_display = f"""
-            <div style="display: flex; justify-content: center; width: 100%; height: 100vh; margin: 0; padding: 0;">
-                <iframe 
-                    src="data:application/pdf;base64,{base64_pdf}#toolbar=0&navpanes=0&scrollbar=0&view=FitH"
-                    width="100%"
-                    style="height: 100vh;"
-                    type="application/pdf"
-                    frameborder="0"
-                >
-                </iframe>
-            </div>
-            {js_height}
-        """
-
-        st.markdown(pdf_display, unsafe_allow_html=True)
-
-    except Exception as e:
-        st.error(f"Error rendering PDF: {str(e)}")
+    st.markdown(pdf_display, unsafe_allow_html=True)
 
 
 if __name__ == "__main__":
