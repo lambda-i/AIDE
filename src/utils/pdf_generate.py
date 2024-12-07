@@ -15,7 +15,7 @@ class MedicalPDF(FPDF):
         self.image(self.logo_path, 10, 8, 20)  # Adjust size and position of the logo
         self.set_font('Arial', 'B', 14)
         self.set_text_color(0, 0, 0)  # Black text for the title
-        self.cell(0, 10, 'Medical Conversation Summary', ln=True, align='C')
+        self.cell(0, 10, 'AI Doctor Conversation Summary', ln=True, align='C')
         self.ln(5)
         self.set_draw_color(0, 123, 255)  # Light blue for separator line
         self.line(10, 30, 200, 30)  # Separator line
@@ -41,9 +41,20 @@ class MedicalPDF(FPDF):
         self.ln(5)
 
 def extract_text_in_quotes(content):
-    """Extract text within single or double quotes from a string."""
-    match = re.search(r'["\']([^"\']+)["\']', content)
-    return match.group(1) if match else content
+    """
+    Extract specific parts of the text:
+    - If the sentence starts with "A user asked:", extract the first sentence inside quotes.
+    - If it doesn't, return the original text.
+    """
+    # Check if the text starts with "A user asked:"
+    if content.startswith("A user asked:"):
+        # Extract the first sentence within quotes
+        match = re.search(r"'([^']+?)'", content)  # Matches text inside single quotes
+        if match:
+            # Extract and return only the first sentence
+            first_sentence = match.group(1).split(".")[0] + "."
+            return first_sentence.strip()
+    return content.strip()  # Return the original text if no match
 
 def create_medical_pdf(json_data, logo_path, file_name="conversation_summary_medical.pdf"):
     pdf = MedicalPDF(logo_path)
