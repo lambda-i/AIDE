@@ -1,6 +1,7 @@
 import streamlit as st
 from src.pages import assessment
 from src.pages import docs
+from src.pages import pdfviewer
 
 # Set page configuration to use a "wide" layout
 st.set_page_config(
@@ -18,6 +19,8 @@ def main():
         assessment()
     elif st.session_state.curr_page == "docs":
         docs()
+    elif st.session_state.curr_page == "pdfviewer":
+        pdfviewer()
 
 
 def App():
