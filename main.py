@@ -739,7 +739,7 @@ async def get_conversation_summary(session_id: str):
 ##############################################################
 
 
-@app.get("/api/get-session-id")
+@app.post("/api/get-session-id")
 async def generate_session():
     try:
         return JSONResponse(content={"sessionId": CURR_SESSION_ID})
