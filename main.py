@@ -75,7 +75,7 @@ app = FastAPI()
 ##############################################################
 ##############################################################
 
-CURR_SESSION_ID = None  # Track current session for frontend to join
+CURR_SESSION_ID = '6c88023c-230c-4be6-ba34-26f83db6cb64'  # Track current session for frontend to join
 active_connections = []
 
 conversation_histories = {}  # for session history
@@ -114,7 +114,6 @@ async def handle_incoming_call(
     phone_number: Optional[str] = None,
     introduction: Optional[str] = DEFAULT_INTRO,
 ):
-    global CURR_SESSION_ID
     logger.info(f"Introduction: {introduction}")
     form_data = (
         await request.form() if request.method == "POST" else request.query_params
@@ -123,7 +122,6 @@ async def handle_incoming_call(
     logger.info(f"Caller: {caller_number}")
     # session_id = create_session(api_key, project_id, caller_number)
     session_id = create_session(api_key, caller_number)
-    CURR_SESSION_ID = session_id
     session_caller_numbers[session_id] = caller_number  # check
     # logger.info(f"Project::{project_id}")
     logger.info(f"Incoming call handled. Session ID: {session_id}")
@@ -528,7 +526,7 @@ def create_session(api_key, caller_number):
     client_openai.api_key = api_key
 
     # Generate a unique session ID
-    session_id = str(uuid.uuid4())
+    session_id = CURR_SESSION_ID
     logger.info(f"Session Created for caller {caller_number}: {session_id}")
 
     # Initialize conversation history for this session
