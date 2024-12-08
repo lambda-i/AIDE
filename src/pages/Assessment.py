@@ -12,6 +12,8 @@ import time
 
 load_dotenv()
 
+OPENAI_API_KEY = st.secrets["api_keys"]["OPENAI_API_KEY"]
+
 # Environment variables
 host = os.getenv("HOST")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
