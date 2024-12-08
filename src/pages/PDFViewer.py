@@ -1,6 +1,6 @@
 import streamlit as st
 import base64
-from src.utils import generate_pdf_from_json
+from utils import generate_pdf_from_json
 from pathlib import Path
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
