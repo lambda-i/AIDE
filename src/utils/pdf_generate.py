@@ -85,6 +85,7 @@ def create_medical_pdf(json_data, logo_path):
             if msg["role"] == "user"
             else msg["content"]
         )
+        print(f"Frontend regex successful: {content}")
         pdf.set_font("Arial", "", 12)
         pdf.multi_cell(0, 10, content)
         pdf.ln(2)
