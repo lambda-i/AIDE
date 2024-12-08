@@ -12,4 +12,4 @@ This solution acts as an AI Doctor, designed to alleviate the strain on Hawaii's
 To test calling our AI doctor, you will  need:
 
 - **A Twilio account and a verified phone number.** You can sign up for a free trial [here](https://www.twilio.com/try-twilio)
-
+- **Credits to Adorasario for the inspiration** You can sign up for a free trial [here]([https://www.twilio.com/try-twilio](https://github.com/adorosario/openai-realtime-with-customgpt-poc))
