@@ -1,7 +1,7 @@
 import streamlit as st
-from src.pages import assessment
-from src.pages import docs
-from src.pages import pdfviewer
+from pages import assessment
+from pages import docs
+from pages import pdfviewer
 
 # Set page configuration to use a "wide" layout
 st.set_page_config(
