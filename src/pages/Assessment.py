@@ -140,6 +140,7 @@ def call_assistance_dialog():
         use_container_width=True,
     ):
         summary_data = generate_summary()
+
         if summary_data:
             if "call_summary" not in st.session_state:
                 st.session_state["call_summary"] = ""
