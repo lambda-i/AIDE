@@ -13,13 +13,9 @@ import time
 load_dotenv()
 
 OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
-
-# Environment variables
-host = os.getenv("HOST")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-QDRANT_URL = os.getenv("QDRANT_URL")
-QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
-PERSONAL_PHONE_NUMBER = os.getenv("PERSONAL_PHONE_NUMBER")
+QDRANT_URL = st.secrets["QDRANT_URL"]
+QDRANT_API_KEY = st.secrets["QDRANT_API_KEY"]
+PERSONAL_PHONE_NUMBER = st.secrets["PERSONAL_PHONE_NUMBER"]
 
 # Get the absolute path to the project root directory
 ROOT_DIR = Path(__file__).resolve().parents[2]
