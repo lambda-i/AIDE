@@ -5,7 +5,7 @@ This solution acts as an AI Doctor, designed to alleviate the strain on Hawaii's
 
 ## Demo Video
 
-[Click here to watch the full demo video](https://www.loom.com/share/d0d4f4490a4349cdab860febce26d1bc)
+[Click here to watch the full demo video](https://youtu.be/CcfIApVVkI4?si=wGshPEmbiA9xrkuQ)
 
 ## Prerequisites
 
